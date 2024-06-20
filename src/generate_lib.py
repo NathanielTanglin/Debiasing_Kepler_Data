@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 
-# Gets the path from the current folder ('src') to the data director ('projectOutput').
+# Gets the path from the current folder ('src') to the data directory.
 path = os.path.join(os.pardir, 'data')
 
 # Stores a list of the data file names from the projectedOutput folder.
@@ -42,7 +42,8 @@ def clean_data(data):
     # Calculate Quartile Deviation
     qd = iqr / 2.0
 
-    max_err = (15.0 * qd)
+    # Try lowering 
+    max_err = (8.0 * qd)
 
     dirty = (abs(median - ndata) > max_err)
 
