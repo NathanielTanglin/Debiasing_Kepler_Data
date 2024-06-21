@@ -26,9 +26,18 @@ def csv_2_data(filepath):
     
     return (header, data)
 
+def data_2_csv(header, data, savepath):
+    with open(savepath, 'w', encoding = 'utf-8') as file:
+        file.write(header)
+        
+        trans_data = data.T
+
+        for row in trans_data:
+            file.write(row)
+
 # Cleans a data set of any outliers greater than 15-sigma, and runs recursively until all outliers
 # have been removed from the data.
-def clean_data(data):
+def clean_data(data, scan = False):
     ndata = np.array(data)
     median = np.nanmedian(ndata)
     
@@ -43,11 +52,22 @@ def clean_data(data):
     qd = iqr / 2.0
 
     # Try lowering 
-    max_err = (8.0 * qd)
+    max_err = (4.0 * qd)
 
     dirty = (abs(median - ndata) > max_err)
 
     if len(ndata[dirty]) > 0:
+        if scan:
+            output = '''Cleaning scan:
+            Median: {med}
+            Quartile deviation: {qd}
+            Max error: {err}
+            Cleaning range: {low}-{high}
+            Spikes: {spikes}
+            '''.format(qd = qd, err = max_err, med = median, spikes = list(ndata[dirty]), low = median - max_err, high = median + max_err)
+
+            print(output)
+
         ndata[dirty] = np.nan
 
         ndata = clean_data(ndata)
@@ -64,40 +84,51 @@ def n_planet_prob(n):
 # and time values and returns them. It also returns the max planets in the system so this information
 # can be included in the plots. 
 def get_data(filepath, skip_failed_systems = False):
-    # Extracts the header and data from the selected .csv file
-    (header, data) = csv_2_data(filepath)
+    try:
+        # Extracts the header and data from the selected .csv file
+        (header, data) = csv_2_data(filepath)
 
-    # Finds the column index for the 'Time' column
-    time_column = header.index('Time')
+        # Finds the column index for the 'Time' column
+        time_column = header.index('Time')
 
-    if skip_failed_systems and data[time_column][-1].astype(float) < 1e6:
-        return None
+        if skip_failed_systems and data[time_column][-1].astype(float) < 1e6:
+            return None
 
-    # Sets the initial planet header.
-    planets = 1
-    planets_header = n_planet_prob(planets)
-    
-    # Sets the first expectation value.
-    exp_values = planets * data[header.index(planets_header)].astype(float)
-
-    # Loops until there are no more MTP columns.
-    while n_planet_prob(planets + 1) in header:
-        # Integrates the loop forwards.
-        planets += 1
+        # Sets the initial planet header.
+        planets = 1
         planets_header = n_planet_prob(planets)
+        
+        # Sets the first expectation value.
+        exp_values = planets * data[header.index(planets_header)].astype(float)
 
-        multiplicity_column = header.index(planets_header)
+        # Loops until there are no more MTP columns.
+        while n_planet_prob(planets + 1) in header:
+            # Integrates the loop forwards.
+            planets += 1
+            planets_header = n_planet_prob(planets)
 
-        exp_values += planets * data[multiplicity_column].astype(float)        
+            multiplicity_column = header.index(planets_header)
 
-    # Cleans the data for return.
-    (x, y) = (np.array(data[time_column]).astype(float), clean_data(exp_values))
+            exp_values += planets * data[multiplicity_column].astype(float)        
 
-    # Returns the data. Note that the expected values are cleaned of spikes using the 'clean_data' method.
-    return {
-        'axes': {
-            'x': x,
-            'y': y
-        },
-        'max_planets': planets
-    }
+        # Cleans the data for return.
+        (x, y) = (np.array(data[time_column]).astype(float), clean_data(exp_values))
+
+        # Returns the data. Note that the expected values are cleaned of spikes using the 'clean_data' method.
+        return {
+            'axes': {
+                'x': x,
+                'y': y
+            },
+            'max_planets': planets
+        }
+    except FileNotFoundError as e:
+        print(e)
+
+        return {
+            'axes': {
+                'x': np.array([]),
+                'y': np.array([])
+            },
+            'max_planets': 0
+        }
