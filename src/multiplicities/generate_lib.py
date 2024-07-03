@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 
 # Gets the path from the current folder ('src') to the data directory.
-path = os.path.join(os.pardir, 'data')
+path = os.path.join(os.pardir, os.pardir, 'data')
 
 # Stores a list of the data file names from the projectedOutput folder.
 # Sort by simulation number where the randomized case gets placed second.
