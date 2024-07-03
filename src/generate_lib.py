@@ -1,3 +1,8 @@
+### generate_lib.py
+# Author: Nathaniel Tanglin
+#
+# This file provides helper methods for the generation .ipynb files.
+
 import csv
 import os
 import numpy as np
@@ -11,10 +16,13 @@ path = os.path.join(os.pardir, 'data')
 # Sort by simulation number where the randomized case gets placed second.
 data_files = sorted(os.listdir(path), key = lambda val: (float(val.replace('sysSim_', '').replace('_randomO.csv', '')) + 0.5) if '_randomO' in val else float(val.replace('sysSim_', '').replace('.csv', '')))
 
-# Processes a .csv file such that the header and data are returned. The data is formatted
-# such that each entry of the returned data array is a column represented by a numpy array. (i.e. data = [[column 1 data...], [column 2 data...], [column 3 data...] etc.])
-# The header is a list of the header string names and is in order. (i.e. header = ['Time', 'Stellar mass', 'Stellar radius' ect.])
 def csv_2_data(filepath):
+    '''
+    Processes a .csv file such that the header and data are returned.
+    The data is formatted such that each entry of the returned data array is a column represented by a numpy array. (i.e. data = [[column 1 data...], [column 2 data...], [column 3 data...] etc.])
+    The header is a list of the header string names and is in order. (i.e. header = ['Time', 'Stellar mass', 'Stellar radius' ect.])
+    '''
+
     # Captures the data.
     file = open(filepath)
     raw_data = list(csv.reader(file))
@@ -27,6 +35,18 @@ def csv_2_data(filepath):
     return (header, data)
 
 def data_2_csv(header, data, savepath):
+    '''
+    Opposite of csv_2_data. Given a header and data structure, saves data as a .csv file at the given savepath.
+    
+    Params:
+    - header: The header to be used for the saved .csv
+
+    - data: The data to be saved. Must be a list of numpy arrays (numpy.array), with each numpy array being a column.
+            The indices must correspond to those of the header list.
+
+    - savepath: The path to save the file at.
+    '''
+
     with open(savepath, 'w', encoding = 'utf-8') as file:
         file.write(header)
         
@@ -35,9 +55,12 @@ def data_2_csv(header, data, savepath):
         for row in trans_data:
             file.write(row)
 
-# Cleans a data set of any outliers greater than 15-sigma, and runs recursively until all outliers
-# have been removed from the data.
 def clean_data(data, scan = False):
+    '''
+    Cleans a data set of any outliers beyond 4-quartile deviations.
+    Runs recursively until all outliers have been removed from the data.
+    '''
+
     ndata = np.array(data)
     median = np.nanmedian(ndata)
     
@@ -74,10 +97,13 @@ def clean_data(data, scan = False):
 
     return ndata
 
-# Helper function to return the header name for n-Planet multiplicity probabilities.
-# These headers for the .csv data files are labeled as '1 Planets', '2 Planets', ... '9 Planets'
-# Example use: n_planet_prob(1) returns '1 Planets', n_planet_prob(2) returns '2 Planets' etc.
 def n_planet_prob(n):
+    '''
+    Helper function to return the header name for n-Planet multiplicity probabilities.
+    These headers for the .csv data files are labeled as '1 Planets', '2 Planets', ... '9 Planets'
+    Example use: n_planet_prob(1) returns '1 Planets', n_planet_prob(2) returns '2 Planets' etc.
+    '''
+
     return str(n) + ' Planets'
 
 # Gleans the relevant data from the chosen data file. This function calculates the expectation value
@@ -91,7 +117,9 @@ def get_data(filepath, skip_failed_systems = False):
         # Finds the column index for the 'Time' column
         time_column = header.index('Time')
 
-        if skip_failed_systems and data[time_column][-1].astype(float) < 1e6:
+        endtime = data[time_column][-1].astype(float)
+
+        if skip_failed_systems and endtime < 1e6:
             return None
 
         # Sets the initial planet header.
