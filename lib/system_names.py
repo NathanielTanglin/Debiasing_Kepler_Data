@@ -2,7 +2,7 @@ import os
 from copy import copy
 
 # Creates the path to the data directory.
-_path = os.path.join(os.pardir, os.pardir, 'data')
+_path = os.path.join(os.pardir, os.pardir, 'data', 'raw')
 
 # Finds all the files in the data directory and sorts them by system number, with the randomly oriented systems after the aligned systems.
 system_names = sorted(os.listdir(_path), key = lambda val: (float(val.replace('sysSim_', '').replace('_randomO.csv', '')) + 0.5) if '_randomO' in val else float(val.replace('sysSim_', '').replace('.csv', '')))
